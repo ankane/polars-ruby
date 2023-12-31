@@ -201,9 +201,13 @@ module Polars
       row_count_offset: 0,
       low_memory: false,
       use_statistics: true,
-      rechunk: true
+      rechunk: true,
+      storage_options: {},
+      hive_partitioning: true
     )
-      if Utils.pathlike?(source)
+      if Utils.uri?(source)
+        source = source.to_s
+      elsif Utils.pathlike?(source)
         source = Utils.normalise_filepath(source)
       end
       if columns.is_a?(String)
@@ -219,7 +223,9 @@ module Polars
             parallel: parallel,
             row_count_name: row_count_name,
             row_count_offset: row_count_offset,
-            low_memory: low_memory
+            low_memory: low_memory,
+            storage_options: storage_options,
+            hive_partitioning: hive_partitioning
           )
 
         if columns.nil?

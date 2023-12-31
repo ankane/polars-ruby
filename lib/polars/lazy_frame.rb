@@ -95,11 +95,17 @@ module Polars
       rechunk: true,
       row_count_name: nil,
       row_count_offset: 0,
-      storage_options: nil,
+      storage_options: {},
       low_memory: false,
       use_statistics: true,
       hive_partitioning: true
     )
+
+      storage_opts = storage_options
+        .transform_keys(&:to_s)
+        .transform_values(&:to_s)
+        .to_a
+
       _from_rbldf(
         RbLazyFrame.new_from_parquet(
           file,
@@ -109,6 +115,7 @@ module Polars
           rechunk,
           Utils._prepare_row_count_args(row_count_name, row_count_offset),
           low_memory,
+          storage_opts,
           use_statistics,
           hive_partitioning
         )

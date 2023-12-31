@@ -1,5 +1,6 @@
 use magnus::{IntoValue, RArray, RHash, TryConvert, Value};
 use polars::io::RowCount;
+use polars::io::cloud::CloudOptions;
 use polars::lazy::frame::LazyFrame;
 use polars::prelude::*;
 use std::cell::RefCell;
@@ -150,9 +151,14 @@ impl RbLazyFrame {
         rechunk: bool,
         row_count: Option<(String, IdxSize)>,
         low_memory: bool,
+        storage_options: Option<Vec<(String,String)>>,
         use_statistics: bool,
         hive_partitioning: bool,
     ) -> RbResult<Self> {
+        let cloud_options = storage_options
+            .map(|kv| Self::parse_cloud_options(&path, kv))
+            .transpose()?;
+
         let row_count = row_count.map(|(name, offset)| RowCount { name, offset });
         let args = ScanArgsParquet {
             n_rows,
@@ -161,13 +167,17 @@ impl RbLazyFrame {
             rechunk,
             row_count,
             low_memory,
-            // TODO support cloud options
-            cloud_options: None,
+            cloud_options: cloud_options,
             use_statistics,
             hive_partitioning,
         };
         let lf = LazyFrame::scan_parquet(path, args).map_err(RbPolarsErr::from)?;
         Ok(lf.into())
+    }
+
+    pub(crate) fn parse_cloud_options(uri: &str, kv: Vec<(String, String)>) -> RbResult<CloudOptions> {
+        let out = CloudOptions::from_untyped_config(uri, kv).map_err(RbPolarsErr::from)?;
+        Ok(out)
     }
 
     pub fn new_from_ipc(

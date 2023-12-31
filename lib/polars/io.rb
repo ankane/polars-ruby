@@ -369,8 +369,11 @@ module Polars
     #   Offset to start the row_count column (only use if the name is set).
     # @param storage_options [Hash]
     #   Extra options that make sense for a particular storage connection.
+    #   More info: https://docs.rs/object_store/0.7.0/object_store/aws/enum.AmazonS3ConfigKey.html
     # @param low_memory [Boolean]
     #   Reduce memory pressure at the expense of performance.
+    # @param hive_partitioning [Boolean]
+    #    Whether to use hive partitioning or not.
     #
     # @return [LazyFrame]
     def scan_parquet(
@@ -381,10 +384,13 @@ module Polars
       rechunk: true,
       row_count_name: nil,
       row_count_offset: 0,
-      storage_options: nil,
-      low_memory: false
+      storage_options: {},
+      low_memory: false,
+      hive_partitioning: true
     )
-      if Utils.pathlike?(source)
+      if Utils.uri?(source)
+        source = source.to_s
+      elsif Utils.pathlike?(source)
         source = Utils.normalise_filepath(source)
       end
 
@@ -397,7 +403,8 @@ module Polars
         row_count_name: row_count_name,
         row_count_offset: row_count_offset,
         storage_options: storage_options,
-        low_memory: low_memory
+        low_memory: low_memory,
+        hive_partitioning: hive_partitioning,
       )
     end
 
@@ -529,6 +536,7 @@ module Polars
     #   Stop reading from parquet file after reading `n_rows`.
     # @param storage_options [Hash]
     #   Extra options that make sense for a particular storage connection.
+    #   More info: https://docs.rs/object_store/0.7.0/object_store/aws/enum.AmazonS3ConfigKey.html
     # @param parallel ["auto", "columns", "row_groups", "none"]
     #   This determines the direction of parallelism. 'auto' will try to determine the
     #   optimal direction.
@@ -542,6 +550,8 @@ module Polars
     # @param use_statistics [Boolean]
     #   Use statistics in the parquet to determine if pages
     #   can be skipped from reading.
+    # @param hive_partitioning [Boolean]
+    #    Whether to use hive partitioning or not.
     # @param rechunk [Boolean]
     #   Make sure that all columns are contiguous in memory by
     #   aggregating the chunks into a single array.
@@ -557,12 +567,13 @@ module Polars
       source,
       columns: nil,
       n_rows: nil,
-      storage_options: nil,
+      storage_options: {},
       parallel: "auto",
       row_count_name: nil,
       row_count_offset: 0,
       low_memory: false,
       use_statistics: true,
+      hive_partitioning: true,
       rechunk: true
     )
       _prepare_file_arg(source) do |data|
@@ -575,7 +586,9 @@ module Polars
           row_count_offset: row_count_offset,
           low_memory: low_memory,
           use_statistics: use_statistics,
-          rechunk: rechunk
+          rechunk: rechunk,
+          storage_options: storage_options,
+          hive_partitioning: hive_partitioning
         )
       end
     end

@@ -250,6 +250,17 @@ module Polars
       value.is_a?(String) || (defined?(Pathname) && value.is_a?(Pathname))
     end
 
+    def self.uri?(value)
+      case value
+      when URI
+        true
+      when String
+        !URI.parse(value).scheme.nil?
+      else
+        false
+      end
+    end
+
     def self._is_iterable_of(val, eltype)
       val.all? { |x| x.is_a?(eltype) }
     end
